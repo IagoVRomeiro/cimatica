@@ -2,251 +2,147 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cimática</title>
-<style>
-  :root { --bg: #0f1115; --surface: #181b22; --border: #2a2f3a; --text: #e8eaf0; --muted: #8b93a7; --primary: #8b5cf6; --ok: #10b981; --warn: #f59e0b; --bad: #ef4444; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-  h1 { font-size: 1.4rem; margin: 4px 0; }
-  section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-  h2 { font-size: 1rem; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  button, select, input { font: inherit; }
-  button { background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
-  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  button:disabled { opacity: .4; cursor: default; }
-  select, input[type=number] { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
-  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-  .note { font-size: 5rem; font-weight: 700; text-align: center; line-height: 1; }
-  .note small { font-size: 1.6rem; color: var(--muted); }
-  .freq { text-align: center; color: var(--muted); }
-  .meter { position: relative; height: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; margin: 12px 0 4px; }
-  .meter i { position: absolute; top: -4px; width: 4px; height: 20px; border-radius: 2px; background: var(--ok); left: 50%; transition: left .08s; }
-  .meter::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); }
-  .cents { text-align: center; font-weight: 600; }
-  .muted { color: var(--muted); }
-  label { display: inline-flex; align-items: center; gap: 6px; }
-  input[type=range] { width: 220px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: .9rem; }
-  .chip button { padding: 0 8px; background: transparent; color: var(--muted); }
-  .out { font-size: 1.3rem; font-weight: 600; }
-  .warn { color: var(--warn); font-size: .9rem; }
-</style>
+<meta name="description" content="Toque uma nota no violão ou violino e veja a frequência virar um padrão de cimática.">
+<meta name="theme-color" content="#0a0b12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-  <h1>Cimática: nota do instrumento → desenho na placa</h1>
+<div id="app">
 
-  <section>
-    <h2>1. Entrada (captador ou microfone)</h2>
-    <div class="row">
-      <button id="start">Ligar</button>
-      <select id="device"><option value="">Microfone padrão</option></select>
-      <label><input type="checkbox" id="guitarMode"> Violão (afina até Mi grave, 82 Hz)</label>
+  <aside id="left" class="col">
+    <section class="card" id="readout">
+      <div class="eyebrow" id="readoutLabel">Nota</div>
+      <div id="note">—</div>
+      <div id="sub">toque uma nota</div>
+      <div id="freq" class="mono">— Hz</div>
+      <div id="tunerWrap">
+        <div id="tuner"><div id="needle"></div></div>
+        <div class="ticks mono"><span>−50</span><span>0</span><span>+50</span></div>
+        <div id="cents" class="mono">afinação: —</div>
+        <div id="vibrato" class="mono"></div>
+      </div>
+      <div id="stringsWrap">
+        <div class="eyebrow">Cordas soltas</div>
+        <div id="strings"></div>
+        <div id="stringMsg" class="mono"></div>
+      </div>
+      <div id="mode" class="mono"></div>
+    </section>
+
+    <section class="card" id="gameCard" hidden>
+      <div class="eyebrow">Treino</div>
+      <div class="gameAsk">Toque</div>
+      <div id="gameTarget">—</div>
+      <div id="gameMsg">&nbsp;</div>
+      <div class="gameStats mono">
+        <span>Pontos <b id="gScore">0</b></span>
+        <span>Sequência <b id="gStreak">0</b></span>
+        <span>Recorde <b id="gBest">0</b></span>
+      </div>
+      <div class="row">
+        <button id="gSkip" type="button">Pular nota</button>
+        <button id="gStop" type="button">Parar treino</button>
+      </div>
+    </section>
+  </aside>
+
+  <main id="stage">
+    <canvas id="plate" aria-label="Placa vibrando com areia formando o padrão da nota"></canvas>
+    <div id="recBadge" hidden>● Gravando <span id="recTime" class="mono">0:00</span></div>
+    <div id="presentHint" hidden>Aperte P ou Esc para sair da apresentação</div>
+  </main>
+
+  <aside id="right" class="col">
+    <section class="card controls">
+      <div class="eyebrow">Entrada</div>
+      <div class="row">
+        <button id="micBtn" type="button">Microfone</button>
+        <button id="demoBtn" type="button">Demonstração</button>
+      </div>
+      <label class="fileBtn" for="fileInput">Abrir arquivo de áudio</label>
+      <input id="fileInput" type="file" accept="audio/*" hidden>
+      <audio id="audioFile" controls hidden></audio>
+
+      <label for="instrument">Instrumento</label>
+      <select id="instrument">
+        <option value="auto">Automático</option>
+        <option value="guitar">Violão</option>
+        <option value="violin">Violino</option>
+      </select>
+
+      <label for="detect">Detecção</label>
+      <select id="detect">
+        <option value="note">Nota única</option>
+        <option value="chord">Acordes</option>
+      </select>
+
+      <label for="a4">Lá de referência (Hz)</label>
+      <div class="row a4row">
+        <input id="a4" type="number" min="400" max="480" step="1">
+        <button type="button" class="small" data-a4="432">432</button>
+        <button type="button" class="small" data-a4="440">440</button>
+        <button type="button" class="small" data-a4="442">442</button>
+      </div>
+
+      <label for="sens">Sensibilidade</label>
+      <input id="sens" type="range" min="1" max="100">
+    </section>
+
+    <section class="card controls">
+      <div class="eyebrow">Placa</div>
+      <select id="shape" aria-label="Formato da placa">
+        <option value="square">Quadrada (Chladni)</option>
+        <option value="circle">Circular</option>
+        <option value="hex">Hexagonal</option>
+        <option value="guitar">Tampo de violão</option>
+        <option value="water">Água</option>
+      </select>
+      <label for="count">Partículas de areia</label>
+      <input id="count" type="range" min="3000" max="30000" step="1000">
+      <div class="row wrap">
+        <button id="resetBtn" type="button">Espalhar areia</button>
+        <button id="gameBtn" type="button">Treino</button>
+        <button id="recBtn" type="button">Gravar vídeo</button>
+        <button id="presentBtn" type="button">Apresentação</button>
+        <button id="fsBtn" type="button">Tela cheia</button>
+      </div>
+      <div class="hint">Atalhos: P apresentação · F tela cheia · R espalhar areia</div>
+    </section>
+  </aside>
+
+  <footer id="bottom">
+    <div class="staffHead">
+      <span class="eyebrow">Histórico</span>
+      <span id="staffNote" class="hint"></span>
+      <button id="clearHist" type="button" class="small">Limpar</button>
     </div>
-    <p class="muted">Use o captador de contato (piezo) preso no instrumento: o microfone do PC ouve o zumbido da placa e se confunde.</p>
-  </section>
+    <canvas id="staff" aria-label="Partitura com as notas tocadas"></canvas>
+    <canvas id="spectrum" aria-label="Espectro de frequências"></canvas>
+  </footer>
+</div>
 
-  <section>
-    <h2>Afinador</h2>
-    <div class="note" id="note">–</div>
-    <div class="freq" id="freq">toque uma nota</div>
-    <div class="meter"><i id="needle"></i></div>
-    <div class="cents" id="cents">&nbsp;</div>
-  </section>
+<div id="start">
+  <h1>Cimática</h1>
+  <p>Toque uma nota no violão ou violino. O programa identifica a nota pela frequência
+    e a areia se organiza nas linhas nodais de uma placa vibrando, como numa placa de Chladni.</p>
+  <div class="row center">
+    <button class="primary" id="micStart" type="button">Ativar microfone</button>
+    <button id="demoStart" type="button">Testar sem instrumento</button>
+    <button id="fileStart" type="button">Abrir arquivo de áudio</button>
+  </div>
+  <div id="err"></div>
+</div>
 
-  <section>
-    <h2>2. Saída para a placa</h2>
-    <div class="row">
-      <label><input type="radio" name="mode" value="off" checked> Desligada</label>
-      <label><input type="radio" name="mode" value="follow"> Seguir a nota</label>
-      <label><input type="radio" name="mode" value="snap"> Seguir com "imã" (ressonância mais próxima)</label>
-      <label><input type="radio" name="mode" value="manual"> Manual</label>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <label>Volume <input type="range" id="vol" min="0" max="1" step="0.01" value="0.15"></label>
-      <label>Manual (Hz) <input type="number" id="manualHz" min="20" max="5000" value="440" style="width:90px"></label>
-      <label><input type="checkbox" id="hold" checked> Segurar a última nota</label>
-    </div>
-    <p>Tocando: <span class="out" id="outHz">–</span></p>
-    <p class="warn">Comece com o volume baixo. Agudo forte incomoda e pode estragar o exciter.</p>
-  </section>
+<div id="toast" role="status" hidden></div>
 
-  <section>
-    <h2>3. Varredura (achar as ressonâncias da placa)</h2>
-    <p class="muted">Sobe a frequência devagar. Quando o sal formar um desenho nítido, aperte <strong>Marcar</strong>. As marcadas viram os pontos do modo "imã" e ficam salvas neste navegador.</p>
-    <div class="row">
-      <label>De <input type="number" id="sweepFrom" value="80" style="width:80px"> Hz</label>
-      <label>até <input type="number" id="sweepTo" value="2500" style="width:80px"> Hz</label>
-      <label>em <input type="number" id="sweepSec" value="120" style="width:70px"> s</label>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <button id="sweep">Varrer</button>
-      <button id="pause" class="secondary" disabled>Pausar</button>
-      <button id="mark" class="secondary" disabled>Marcar</button>
-      <button id="nudgeDown" class="secondary" disabled>−1 Hz</button>
-      <button id="nudgeUp" class="secondary" disabled>+1 Hz</button>
-    </div>
-    <div class="chips" id="marks"></div>
-  </section>
-</main>
-
-<script>
-const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const NAMES_PT = { C: "Dó", D: "Ré", E: "Mi", F: "Fá", G: "Sol", A: "Lá", B: "Si" };
-const $ = id => document.getElementById(id);
-
-let ctx, analyser, buf, osc, gain, stream;
-let lastHz = null, smoothHz = null;
-let sweep = null; // { from, to, sec, t0, paused, pausedAt, hz }
-let marks = [];
-try { marks = JSON.parse(localStorage.getItem("cimatica-marks") || "[]"); } catch { marks = []; }
-
-function noteOf(hz) {
-  const n = 12 * Math.log2(hz / 440) + 69;
-  const r = Math.round(n);
-  return { name: NOTES[r % 12], octave: Math.floor(r / 12) - 1, cents: Math.round((n - r) * 100), midi: r };
-}
-
-// Autocorrelação com refinamento parabólico (bom para violão e violino; YIN simplificado)
-function detect(data, rate, minHz) {
-  let rms = 0;
-  for (const v of data) rms += v * v;
-  rms = Math.sqrt(rms / data.length);
-  if (rms < 0.01) return null; // silêncio
-  const maxLag = Math.floor(rate / minHz), minLag = Math.floor(rate / 3000);
-  const n = data.length - maxLag;
-  const d = new Float32Array(maxLag + 1);
-  for (let lag = minLag; lag <= maxLag; lag++) {
-    let s = 0;
-    for (let i = 0; i < n; i++) { const x = data[i] - data[i + lag]; s += x * x; }
-    d[lag] = s;
-  }
-  // Diferença normalizada acumulada (YIN): pega o primeiro vale abaixo do limiar
-  let sum = 0, best = -1;
-  const cmnd = new Float32Array(maxLag + 1);
-  for (let lag = minLag; lag <= maxLag; lag++) {
-    sum += d[lag];
-    cmnd[lag] = d[lag] * (lag - minLag + 1) / (sum || 1);
-  }
-  for (let lag = minLag + 1; lag < maxLag; lag++) {
-    if (cmnd[lag] < 0.15 && cmnd[lag] <= cmnd[lag + 1]) { best = lag; break; }
-  }
-  if (best < 0) return null;
-  const a = cmnd[best - 1], b = cmnd[best], c = cmnd[best + 1];
-  const shift = (a - c) / (2 * (a - 2 * b + c)) || 0;
-  return rate / (best + shift);
-}
-
-function setOut(hz) {
-  if (!osc) return;
-  const vol = Number($("vol").value);
-  if (hz) {
-    osc.frequency.setTargetAtTime(hz, ctx.currentTime, 0.02);
-    gain.gain.setTargetAtTime(vol, ctx.currentTime, 0.05);
-    $("outHz").textContent = `${hz.toFixed(1)} Hz`;
-  } else {
-    gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
-    $("outHz").textContent = "–";
-  }
-}
-
-const nearestMark = hz => marks.length ? marks.reduce((a, b) => Math.abs(Math.log(b / hz)) < Math.abs(Math.log(a / hz)) ? b : a) : hz;
-
-function tick() {
-  analyser.getFloatTimeDomainData(buf);
-  const hz = detect(buf, ctx.sampleRate, $("guitarMode").checked ? 70 : 150);
-  if (hz) {
-    smoothHz = smoothHz && Math.abs(Math.log(hz / smoothHz)) < 0.03 ? smoothHz * 0.7 + hz * 0.3 : hz;
-    lastHz = smoothHz;
-    const n = noteOf(smoothHz);
-    $("note").innerHTML = `${n.name}<small>${n.octave}</small>`;
-    $("freq").textContent = `${smoothHz.toFixed(1)} Hz · ${NAMES_PT[n.name[0]]}${n.name.length > 1 ? " sustenido" : ""}`;
-    $("needle").style.left = `${50 + n.cents}%`;
-    $("needle").style.background = Math.abs(n.cents) <= 5 ? "var(--ok)" : Math.abs(n.cents) <= 15 ? "var(--warn)" : "var(--bad)";
-    $("cents").textContent = Math.abs(n.cents) <= 5 ? "afinado" : n.cents > 0 ? `${n.cents} cents acima (afrouxe)` : `${-n.cents} cents abaixo (aperte)`;
-  } else if (!$("hold").checked) {
-    lastHz = null;
-  }
-
-  const mode = document.querySelector("input[name=mode]:checked").value;
-  if (sweep) {
-    if (!sweep.paused) {
-      const p = Math.min(1, (performance.now() - sweep.t0) / (sweep.sec * 1000));
-      sweep.hz = sweep.from * Math.pow(sweep.to / sweep.from, p); // exponencial: tempo igual por oitava
-      if (p >= 1) stopSweep();
-    }
-    setOut(sweep ? sweep.hz : null);
-  } else if (mode === "follow") setOut(lastHz);
-  else if (mode === "snap") setOut(lastHz && nearestMark(lastHz));
-  else if (mode === "manual") setOut(Number($("manualHz").value));
-  else setOut(null);
-  requestAnimationFrame(tick);
-}
-
-async function start() {
-  ctx = ctx || new AudioContext();
-  await ctx.resume();
-  if (stream) stream.getTracks().forEach(t => t.stop());
-  const deviceId = $("device").value;
-  stream = await navigator.mediaDevices.getUserMedia({
-    audio: { deviceId: deviceId ? { exact: deviceId } : undefined, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-  });
-  const src = ctx.createMediaStreamSource(stream);
-  analyser = ctx.createAnalyser();
-  analyser.fftSize = 4096;
-  buf = new Float32Array(analyser.fftSize);
-  src.connect(analyser);
-  if (!osc) {
-    osc = ctx.createOscillator();
-    osc.type = "sine";
-    gain = ctx.createGain();
-    gain.gain.value = 0;
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    requestAnimationFrame(tick);
-  }
-  const devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "audioinput");
-  $("device").innerHTML = devices.map(d => `<option value="${d.deviceId}" ${d.deviceId === deviceId ? "selected" : ""}>${d.label || "Entrada"}</option>`).join("");
-  $("start").textContent = "Ligado";
-}
-
-function renderMarks() {
-  try { localStorage.setItem("cimatica-marks", JSON.stringify(marks)); } catch {}
-  $("marks").innerHTML = marks.length
-    ? marks.map((m, i) => `<span class="chip">${m.toFixed(1)} Hz · ${noteOf(m).name}${noteOf(m).octave}<button data-i="${i}" title="Tirar">×</button></span>`).join("")
-    : '<span class="muted">Nenhuma ressonância marcada ainda.</span>';
-}
-$("marks").onclick = e => { const i = e.target.dataset.i; if (i !== undefined) { marks.splice(Number(i), 1); renderMarks(); } };
-
-function stopSweep() {
-  sweep = null;
-  $("sweep").textContent = "Varrer";
-  for (const id of ["pause", "mark", "nudgeDown", "nudgeUp"]) $(id).disabled = true;
-}
-
-$("start").onclick = () => start().catch(e => alert(`Não deu para abrir o microfone: ${e.message}`));
-$("device").onchange = () => ctx && start();
-$("sweep").onclick = async () => {
-  if (sweep) return stopSweep();
-  if (!osc) await start();
-  sweep = { from: Number($("sweepFrom").value), to: Number($("sweepTo").value), sec: Number($("sweepSec").value), t0: performance.now(), paused: false, hz: null };
-  $("sweep").textContent = "Parar";
-  for (const id of ["pause", "mark", "nudgeDown", "nudgeUp"]) $(id).disabled = false;
-};
-$("pause").onclick = () => {
-  if (!sweep) return;
-  if (sweep.paused) { sweep.t0 += performance.now() - sweep.pausedAt; sweep.paused = false; $("pause").textContent = "Pausar"; }
-  else { sweep.paused = true; sweep.pausedAt = performance.now(); $("pause").textContent = "Continuar"; }
-};
-// Ajuste fino com a varredura pausada: o desenho fica mais nítido exatamente na ressonância
-const nudge = d => { if (sweep) { if (!sweep.paused) $("pause").click(); sweep.hz += d; } };
-$("nudgeDown").onclick = () => nudge(-1);
-$("nudgeUp").onclick = () => nudge(1);
-$("mark").onclick = () => { if (sweep?.hz) { marks.push(Math.round(sweep.hz * 10) / 10); marks.sort((a, b) => a - b); renderMarks(); } };
-renderMarks();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
