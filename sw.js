@@ -1,5 +1,5 @@
 // Service worker: rede primeiro (para receber atualizações), cache como reserva (funciona offline).
-const CACHE = 'cimatica-v2';
+const CACHE = 'cimatica-v3';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

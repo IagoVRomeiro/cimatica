@@ -96,6 +96,9 @@ input[type=number] { width: 72px; cursor: text; font-family: var(--font-mono); }
 .a4row .small { padding: 6px 8px; }
 button:hover, select:hover, .fileBtn:hover { border-color: rgba(231, 233, 243, .25); }
 button:focus-visible, select:focus-visible, input:focus-visible, .fileBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#mic { max-width: 100%; text-overflow: ellipsis; }
+#micInfo:empty { display: none; }
+#micInfo.warn { color: var(--bad); }
 button.on { border-color: var(--accent); color: var(--accent); }
 button.rec { border-color: var(--bad); color: var(--bad); }
 button.small { font-size: 12px; padding: 4px 9px; }

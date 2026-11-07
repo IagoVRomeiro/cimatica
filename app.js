@@ -13,7 +13,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('cimatica.' + k, JSON.stringify(v)); } catch { /* sem armazenamento */ } },
 };
 
-const DEFAULTS = { instrument: 'auto', detect: 'note', a4: 440, shape: 'square', sens: 60, count: 16000 };
+const DEFAULTS = { mic: 'auto', instrument: 'auto', detect: 'note', a4: 440, shape: 'square', sens: 60, count: 16000 };
 const settings = Object.assign({}, DEFAULTS, store.get('settings', {}));
 const saveSettings = () => store.set('settings', settings);
 
@@ -135,13 +135,77 @@ async function toggleMic() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     throw new Error('o navegador só libera o microfone em páginas https:// ou http://localhost.');
   }
-  micStream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-  });
+  micStream = await openMic();
   micNode = audioCtx.createMediaStreamSource(micStream);
   micNode.connect(inputBus);
   keepAwake();
   updateInputButtons();
+}
+
+// Escolha do microfone. Usar o microfone de um fone Bluetooth faz o fone trocar do perfil de
+// música (A2DP) para o de chamada (HFP/HSP), com som mono e abafado. Por isso, no modo
+// automático, o app evita microfones Bluetooth quando existe outro disponível.
+const AUDIO_OPTS = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+const BT_RE = /bluetooth|hands-?free|headset|hfp|hsp|airpods|buds|jbl|bose|sony wh|wf-|beats|soundcore|\bbt\b/i;
+
+async function listMics() {
+  try { return (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput'); }
+  catch { return []; }
+}
+function pickMic(mics) {
+  const real = mics.filter(d => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  if (settings.mic !== 'auto') {
+    const chosen = real.find(d => d.deviceId === settings.mic);
+    if (chosen) return chosen.deviceId;
+  }
+  if (!real.some(d => d.label)) return null;              // sem permissão ainda: não dá para saber os nomes
+  const nonBT = real.filter(d => !BT_RE.test(d.label));
+  if (!nonBT.length) return null;
+  const builtin = nonBT.find(d => /intern|built-?in|embutid|integrad|analog|pci|sof|hda/i.test(d.label));
+  return (builtin || nonBT[0]).deviceId;
+}
+const usedId = stream => { const t = stream.getAudioTracks()[0]; return t && t.getSettings ? t.getSettings().deviceId : null; };
+
+async function openMic() {
+  let id = pickMic(await listMics());
+  let stream = await navigator.mediaDevices.getUserMedia({ audio: id ? { ...AUDIO_OPTS, deviceId: { exact: id } } : AUDIO_OPTS });
+  if (!id) {
+    // Primeira vez: agora os nomes dos microfones estão disponíveis. Se abriu o do fone Bluetooth,
+    // troca para outro (o fone volta ao perfil de música quando o microfone dele é liberado).
+    const mics = await listMics();
+    id = pickMic(mics);
+    const cur = mics.find(d => d.deviceId === usedId(stream));
+    if (id && id !== usedId(stream) && (!cur || BT_RE.test(cur.label) || cur.deviceId === 'default')) {
+      try {
+        const other = await navigator.mediaDevices.getUserMedia({ audio: { ...AUDIO_OPTS, deviceId: { exact: id } } });
+        stream.getTracks().forEach(t => t.stop());
+        stream = other;
+      } catch { /* fica com o que abriu */ }
+    }
+  }
+  await fillMicSelect(usedId(stream));
+  return stream;
+}
+
+async function fillMicSelect(activeId) {
+  const sel = $('mic');
+  const mics = (await listMics()).filter(d => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  sel.innerHTML = '';
+  sel.add(new Option('Automático (evita fone Bluetooth)', 'auto'));
+  mics.forEach((d, i) => sel.add(new Option((d.label || 'Microfone ' + (i + 1)) + (BT_RE.test(d.label) ? ' — Bluetooth' : ''), d.deviceId)));
+  sel.value = mics.some(d => d.deviceId === settings.mic) ? settings.mic : 'auto';
+  const act = mics.find(d => d.deviceId === activeId);
+  $('micInfo').textContent = act && act.label ? 'Usando: ' + act.label : '';
+  $('micInfo').classList.toggle('warn', !!(act && BT_RE.test(act.label)));
+  if (act && BT_RE.test(act.label)) $('micInfo').textContent += ' — o fone Bluetooth vai para o modo de chamada (som pior). Escolha outro microfone se houver.';
+}
+
+async function onMicChange() {
+  settings.mic = $('mic').value;
+  saveSettings();
+  if (!micStream) return;
+  try { await toggleMic(); await toggleMic(); }       // reabre com o novo microfone
+  catch (e) { toast('Não foi possível trocar o microfone: ' + (e && e.message ? e.message : e)); updateInputButtons(); }
 }
 
 // Demonstração: cordas soltas e escalas (com vibrato nas notas de violino) ou acordes de violão
@@ -925,6 +989,9 @@ $('micStart').addEventListener('click', () => startMicFromUI($('err')));
 $('demoStart').addEventListener('click', () => { startDemo(); closeStart(); });
 $('fileStart').addEventListener('click', () => $('fileInput').click());
 $('micBtn').addEventListener('click', () => startMicFromUI(null));
+$('mic').addEventListener('change', onMicChange);
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => fillMicSelect(micStream && usedId(micStream)));
+fillMicSelect(null);
 $('demoBtn').addEventListener('click', () => (demoTimer ? stopDemo() : startDemo()));
 $('fileInput').addEventListener('change', e => { openAudioFile(e.target.files[0]); closeStart(); });
 
